@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useContext} from 'react';
 import {compose} from "recompose";
 
 import SpeakerSearchBar from "../SpeakerSearchBar/SpeakerSearchBar";
@@ -6,8 +6,10 @@ import Speaker from "../Speaker/Speaker";
 import {REQUEST_STATUS} from "../../reducers/request";
 import withRequest from "../HOC/withRequest";
 import withSpecialMessage from "../HOC/withSpecialMessage";
+import { DataContext, DataProvider } from "../../contexts/DataContext";
 
-const Speakers = ({records: speakers, status, error, put, bgColor, specialMessage}) => {
+
+const SpeakersComponent = ({records: speakers, status, error, put, bgColor, specialMessage}) => {
 
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -67,6 +69,13 @@ const Speakers = ({records: speakers, status, error, put, bgColor, specialMessag
     );
 };
 
+const Speakers = (props) => {
+    return (
+        <DataProvider>
+            <SpeakersComponent {...props}/>
+        </DataProvider>
+    )
+}
 
 export default compose(
     withRequest("http://localhost:4000", "speakers"),
