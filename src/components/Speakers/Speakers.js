@@ -1,94 +1,87 @@
-import React, {useState, useEffect, useReducer} from 'react';
-import axios from "axios";
+import React, {useState} from 'react';
 
-import SpeakerSearchBar from "../SpeakerSearchBar/SpeakerSearchBar";
-import Speaker from "../Speaker/Speaker";
-import {GET_ALL_FAILURE, GET_ALL_SUCCESS, PUT_FAILURE, PUT_SUCCESS} from "../../actions/request";
-import requestReducer, {REQUEST_STATUS} from "../../reducers/request";
+import SpeakerSearchBar from '../SpeakerSearchBar/SpeakerSearchBar';
+import Speaker from '../Speaker/Speaker';
 
-const Speakers = () => {
+import {REQUEST_STATUS} from '../../reducers/request';
+import SpecialMessageRenderProps from "../RP/SpecialMessageRenderProps";
+import Request from "../RP/Request";
 
-    const [searchQuery, setSearchQuery] = useState("");
+const Speakers = ({bgColor}) => {
 
-    const [{records: speakers, status, error}, dispatch] = useReducer(requestReducer,{
-        status: REQUEST_STATUS.LOADING,
-        records: [],
-        error: null
-    });
-
-
-    useEffect(() => {
-        const fetchSpeakers = async () => {
-            try {
-                const response = await axios.get("http://localhost:4000/speakers");
-                dispatch({
-                    records: response.data,
-                    type: GET_ALL_SUCCESS
-                });
-            } catch (e) {
-                console.log("Loading data error", e);
-                dispatch({
-                    type: GET_ALL_FAILURE,
-                    error: e
-                });
-            }
-        }
-        fetchSpeakers();
-    }, []);
-
-    async function onFavoriteToggleHandler(speakerRec) {
-        try {
-            const toggledSpeakerRec = {
-                ...speakerRec,
-                isFavorite: !speakerRec.isFavorite
-            };
-            await axios.put(`http://localhost:4000/speakers/${speakerRec.id}`, toggledSpeakerRec);
-            dispatch({
-                type: PUT_SUCCESS,
-                record: toggledSpeakerRec
-            });
-        } catch (e) {
-            dispatch({
-                type: PUT_FAILURE,
-                error: e
-            })
-        }
-    }
-
-    const success = status === REQUEST_STATUS.SUCCESS;
-    const isLoading = status === REQUEST_STATUS.LOADING;
-    const hasErrored = status === REQUEST_STATUS.ERROR;
+    const [searchQuery, setSearchQuery] = useState('');
 
     return (
-        <div>
+        <div className={bgColor}>
             <SpeakerSearchBar
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
             />
-            {isLoading && <div>Loading...</div>}
-            {hasErrored && <div>
-                Loading error... Is the json-server running? (try "npm run
-                json-server" at terminal prompt)
-                <br/>
-                <b>ERROR: {error.message}</b>
-            </div>}
-            {success && (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 grid-cols-1 gap-12">
-                    {speakers.filter((rec) => {
-                        const targetString = `${rec.firstName} ${rec.lastName}`.toLowerCase();
-                        return searchQuery.length === 0 ? true : targetString.includes(searchQuery.toLowerCase());
-                    })
-                        .map((speaker) => (
-                            <Speaker
-                                key={speaker.id}
-                                {...speaker}
-                                onFavoriteToggle={() => onFavoriteToggleHandler(speaker)}
-                            />
-                        ))
-                    }
-                </div>
-            )}
+            <React.Fragment>
+                <SpecialMessageRenderProps>
+                    {({specialMessage}) => {
+                        return (
+                            <Request baseUrl="http://localhost:4000" routeName="speakers">
+                                {({records: speakers, status, error, put}) => {
+                                    const onFavoriteToggleHandler = async (speakerRec) => {
+                                        put({
+                                            ...speakerRec,
+                                            isFavorite: !speakerRec.isFavorite,
+                                        });
+                                    };
+                                    const success = status === REQUEST_STATUS.SUCCESS;
+                                    const isLoading = status === REQUEST_STATUS.LOADING;
+                                    const hasErrored = status === REQUEST_STATUS.ERROR;
+                                    return (
+                                        <React.Fragment>
+
+                                            {specialMessage && specialMessage.length > 0 && (
+                                                <div
+                                                    className="bg-orange-100 border-l-8 border-orange-500 text-orange-700 p-4 text-2xl"
+                                                    role="alert"
+                                                >
+                                                    <p className="font-bold">Special Message</p>
+                                                    <p>{specialMessage}</p>
+                                                </div>
+                                            )}
+
+                                            {isLoading && <div>Loading...</div>}
+                                            {hasErrored && (
+                                                <div>
+                                                    Loading error... Is the json-server running? (try "npm run
+                                                    json-server" at terminal prompt)
+                                                    <br/>
+                                                    <b>ERROR: {error.message}</b>
+                                                </div>
+                                            )}
+                                            {success && (
+                                                <div className="grid md:grid-cols-2 lg:grid-cols-3 grid-cols-1 gap-12">
+                                                    {speakers
+                                                        .filter((rec) => {
+                                                            const targetString = `${rec.firstName} ${rec.lastName}`.toLowerCase();
+                                                            return searchQuery.length === 0
+                                                                ? true
+                                                                : targetString.includes(searchQuery.toLowerCase());
+                                                        })
+                                                        .map((speaker) => (
+                                                            <Speaker
+                                                                key={speaker.id}
+                                                                {...speaker}
+                                                                onFavoriteToggle={() => onFavoriteToggleHandler(speaker)}
+                                                            />
+                                                        ))}
+                                                </div>
+                                            )}
+                                        </React.Fragment>
+                                    );
+                                }}
+                            </Request>
+                        )
+                    }}
+                </SpecialMessageRenderProps>
+            </React.Fragment>
         </div>
     );
 };
+
 export default Speakers;
